@@ -47,6 +47,8 @@ ax.legend()
 plt.tight_layout()
 plt.show()
 
+print("Lecture 2 starts here")
+
 import itertools
 import math
 import numpy as np
