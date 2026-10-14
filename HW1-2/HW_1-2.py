@@ -51,53 +51,23 @@ print("Lecture 2 starts here")
 
 import itertools
 import math
-import numpy as np
+import random
 
-# -------------------------------------------------------------------------
-# Part 1: Exact enumeration using itertools.combinations
-# -------------------------------------------------------------------------
-# Represent the 15 rows: 1 = flagged (4 rows), 0 = unflagged (11 rows)
 dataset = [1] * 4 + [0] * 11
-sample_size = 5
 
-all_combinations = list(itertools.combinations(dataset, sample_size))
-total_test_sets = len(all_combinations)
+all_combinations = list(itertools.combinations(dataset, 5))
+favorable_combinations = [c for c in all_combinations if sum(c) >= 2]
+exact_prob_itertools = len(favorable_combinations) / len(all_combinations)
 
-# Count how many test sets have at least 2 flagged rows
-favorable_cases = sum(1 for combo in all_combinations if sum(combo) >= 2)
+total_ways = math.comb(15, 5)
+ways_0 = math.comb(4, 0) * math.comb(11, 5)
+ways_1 = math.comb(4, 1) * math.comb(11, 4)
+exact_prob_formula = 1 - (ways_0 + ways_1) / total_ways
 
-prob_itertools = favorable_cases / total_test_sets
+trials = 1000000
+successes = sum(sum(random.sample(dataset, 5)) >= 2 for _ in range(trials))
+mc_prob = successes / trials
 
-print(f"Total test sets enumerated: {total_test_sets}")
-print(f"Favorable test sets (>= 2 flagged): {favorable_cases}")
-print(f"Exact Probability (itertools): {prob_itertools:.7f} ({favorable_cases}/{total_test_sets})")
-
-
-# -------------------------------------------------------------------------
-# Part 2: Verification using the Combinatorial Formula
-# -------------------------------------------------------------------------
-N, K, n = 15, 4, 5
-
-comb_total = math.comb(N, n)
-prob_0 = math.comb(K, 0) * math.comb(N - K, n - 0) / comb_total
-prob_1 = math.comb(K, 1) * math.comb(N - K, n - 1) / comb_total
-
-prob_theoretical = 1 - (prob_0 + prob_1)
-
-print(f"Theoretical Probability (formula): {prob_theoretical:.7f}")
-
-
-# -------------------------------------------------------------------------
-# Part 3: Verification via Monte Carlo Simulation
-# -------------------------------------------------------------------------
-num_simulations = 1_000_000
-rng = np.random.default_rng(seed=42)
-
-# Generate uniform draws without replacement
-# We shuffle an array of row labels/flags across iterations
-simulated_draws = rng.choice(dataset, size=(num_simulations, sample_size), replace=False)
-flagged_counts = simulated_draws.sum(axis=1)
-
-prob_monte_carlo = np.mean(flagged_counts >= 2)
-
-print(f"Monte Carlo Probability ({num_simulations:,} trials): {prob_monte_carlo:.7f}")
+print(f"Itertools probability: {exact_prob_itertools:.6f}")
+print(f"Formula probability:   {exact_prob_formula:.6f}")
+print(f"Monte Carlo result:    {mc_prob:.6f}")
