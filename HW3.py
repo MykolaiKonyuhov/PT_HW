@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 sensitivity = 0.95
 specificity = 0.99
-fp_rate = 1 - specificity  # P(T+|D^c)
+fp_rate = 1 - specificity  # P(T^+|D^c)
 
 p_grid = np.linspace(0.001, 0.5, 500)
 posterior_exact = (sensitivity * p_grid) / (sensitivity * p_grid + fp_rate * (1 - p_grid))
@@ -31,7 +31,7 @@ for p in eval_prevalences:
 
 
 plt.figure(figsize=(9, 5.5))
-plt.plot(p_grid, posterior_exact, label="Exact Posterior P(D|T+)", color="royalblue", lw=2)
+plt.plot(p_grid, posterior_exact, label="Exact Posterior P(D|T^+)", color="royalblue", lw=2)
 plt.scatter(eval_prevalences, mc_estimates, color="red", zorder=5, label="Monte Carlo Estimates ($N=200\,000$)")
 
 plt.axvline(x=p_threshold, color="gray", linestyle="--", alpha=0.7)
