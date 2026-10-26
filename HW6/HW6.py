@@ -9,7 +9,7 @@ s = 0.5
 rate = 2.0
 q_levels = [0.1, 0.5, 0.9]
 
-# --- 1. Exponential Model: Exp(2) ---
+# 1. Exponential Model: Exp(2) 
 # SciPy uses reciprocal rate: scale = 1 / rate
 orig_exp = stats.expon.rvs(scale=1.0 / rate, size=N)
 rem_exp = orig_exp[orig_exp > s] - s
@@ -43,7 +43,7 @@ max_err_rem = np.max(np.abs(surv_rem_exp - theo_surv_exp))
 print(f"\nMax discrepancy on [0, 3] (Original): {max_err_orig:.5f}")
 print(f"Max discrepancy on [0, 3] (Remaining): {max_err_rem:.5f}")
 
-# --- 2. Uniform Model: Unif(0, 1) ---
+# 2. Uniform Model: Unif(0, 1)
 orig_unif = stats.uniform.rvs(loc=0.0, scale=1.0, size=N)
 rem_unif = orig_unif[orig_unif > s] - s
 
@@ -52,7 +52,7 @@ surv_orig_unif = empirical_survival(orig_unif, grid_unif)
 surv_rem_unif = empirical_survival(rem_unif, grid_unif)
 theo_surv_rem_unif = np.maximum(0.0, 1.0 - 2.0 * grid_unif)
 
-# --- 3. Visualization ---
+# 3. Visualization 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
 # Plot for Exp(2)
