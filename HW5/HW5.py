@@ -1,65 +1,96 @@
-import matplotlib.pyplot as plt
 import numpy as np
-from scipy import stats
+import matplotlib.pyplot as plt
+from scipy.stats import binom, poisson
 
-plt.style.use("seaborn-v0_8-whitegrid")
-
-def tv_distance(n, lam):
-    p, k = lam / n, np.arange(n + 1)
-    binom, pois = stats.binom(n, p), stats.poisson(lam)
-    return 0.5 * (np.sum(np.abs(binom.pmf(k) - pois.pmf(k))) + pois.sf(n))
-
+# Parameters
 lambdas = [1, 5, 10]
-n_grid = [21, 51, 101, 501, 1000]
+multipliers = [1, 2, 5, 10, 50, 100]
 
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 4.5))
+def compute_tv_distance(n, lam):
+    #Exact total variation distance between Binomial(n, lam/n) and Poisson(lam)
+    p = lam / n
+    k = np.arange(0, n + 1)
+    pmf_binom = binom.pmf(k, n, p)
+    pmf_pois = poisson.pmf(k, lam)
+    
+    # Sum differences over [0, n] + full Poisson tail probability P(Y > n)
+    diff_sum = np.sum(np.abs(pmf_binom - pmf_pois))
+    tail_pois = poisson.sf(n, lam)
+    
+    return 0.5 * (diff_sum + tail_pois)
+
+def compute_tail_error(n, lam):
+    #Absolute difference |P(X_n >= 2*lam) - P(Y >= 2*lam)| using sf at c_lam - 1
+    p = lam / n
+    c_lam = 2 * lam
+    
+    prob_binom = binom.sf(c_lam - 1, n, p)
+    prob_pois = poisson.sf(c_lam - 1, lam)
+    
+    return np.abs(prob_binom - prob_pois)
+
+# Parts a, b 
+fig, axes = plt.subplots(1, 2, figsize=(14, 5.5))
 
 for lam in lambdas:
-    n_vals = [lam] + [n for n in n_grid if n > lam]
-    c_lam = 2 * lam
-    pois = stats.poisson(lam)
+    n_values = [m * lam for m in multipliers]
+    tv_dists = [compute_tv_distance(n, lam) for n in n_values]
+    tail_errs = [compute_tail_error(n, lam) for n in n_values]
     
-    dtv = [tv_distance(n, lam) for n in n_vals]
-    tail_err = [abs(stats.binom(n, lam / n).sf(c_lam - 1) - pois.sf(c_lam - 1)) for n in n_vals]
+    # Plot (a): Total Variation Distance
+    axes[0].plot(n_values, tv_dists, marker='o', linewidth=2, label=rf'$\lambda = {lam}$')
     
-    ax1.plot(n_vals, dtv, marker="o", label=rf"$\lambda = {lam}$")
-    ax2.plot(n_vals, tail_err, marker="s", label=rf"$\lambda = {lam}$")
+    # Plot (b): Tail Probability Error
+    axes[1].plot(n_values, tail_errs, marker='s', linewidth=2, label=rf'$\lambda = {lam}$ ($c_\lambda = {2*lam}$)')
 
-ax1.set(xscale="log", xlabel="Sample size $n$ (log scale)",
-        ylabel=r"$d_{\mathrm{TV}}(p_{X_n}, p_Y)$", title="Total-Variation Distance vs $n$")
-ax1.legend()
+# Formatting Plot (a)
+axes[0].set_xscale('log')
+axes[0].set_yscale('log')
+axes[0].set_title(r'(a) Total Variation Distance $d_{\mathrm{TV}}(p_{X_n}, p_Y)$ vs. $n$', fontsize=12)
+axes[0].set_xlabel(r'$n$ (log scale)', fontsize=11)
+axes[0].set_ylabel(r'$d_{\mathrm{TV}}(p_{X_n}, p_Y)$ (log scale)', fontsize=11)
+axes[0].grid(True, which='both', linestyle='--', alpha=0.5)
+axes[0].legend()
 
-ax2.set(xscale="log", xlabel="Sample size $n$ (log scale)",
-        ylabel=r"$|\mathbb{P}(X_n \geq 2\lambda) - \mathbb{P}(Y \geq 2\lambda)|$",
-        title=r"Tail Error at $c_\lambda = 2\lambda$")
-ax2.legend()
+# Formatting Plot (b)
+axes[1].set_xscale('log')
+axes[1].set_yscale('log')
+axes[1].set_title(r'(b) Tail Error $|\mathbb{P}(X_n \geq 2\lambda) - \mathbb{P}(Y \geq 2\lambda)|$ vs. $n$', fontsize=12)
+axes[1].set_xlabel(r'$n$ (log scale)', fontsize=11)
+axes[1].set_ylabel('Absolute Tail Error (log scale)', fontsize=11)
+axes[1].grid(True, which='both', linestyle='--', alpha=0.5)
+axes[1].legend()
 
 plt.tight_layout()
 plt.show()
 
-fig, axes = plt.subplots(1, 2, figsize=(13, 4.5))
+# c) PMF Comparison for large vs. small TV Distance 
+# P1 Large distance -> (lambda=5, n=5) [i.e., n = lambda, p = 1]
+# P2 Small distance -> (lambda=5, n=500) [i.e., n = 100*lambda, p = 0.01]
+pairs = [(5, 5), (5, 500)]
 
-for ax, (lam, n) in zip(axes, [(10, 10), (1, 1000)]):
-    binom, pois = stats.binom(n, lam / n), stats.poisson(lam)
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+for idx, (lam, n) in enumerate(pairs):
+    p = lam / n
+    tv = compute_tv_distance(n, lam)
     
-    if lam == 1:
-        k = np.arange(7)
-        ax.set_xlim(-0.8, 6.8)
-        ax.set_xticks(range(7))
-    else:
-        k = np.arange(15)
-        ax.set_xlim(-0.8, 14.8)
-        ax.set_xticks(range(0, 15, 2))
-        
-    w = 0.35
-    ax.bar(k - w / 2, binom.pmf(k), width=w, label=f"Binomial({n}, {lam/n:.3f})",
-           color="tab:blue", alpha=0.85, edgecolor="black", linewidth=0.8)
-    ax.bar(k + w / 2, pois.pmf(k), width=w, label=f"Poisson({lam})",
-           color="tab:orange", alpha=0.85, edgecolor="black", linewidth=0.8)
+    # Plot range covering the bulk of the Poisson(5) distribution
+    k_max = int(lam * 2.5)
+    k = np.arange(0, k_max + 1)
+    pmf_binom = binom.pmf(k, n, p)
+    pmf_pois = poisson.pmf(k, lam)
     
-    ax.set(xlabel="Count $k$", ylabel="Probability",
-           title=rf"$(\lambda={lam}, n={n})$: $d_{{\mathrm{{TV}}}} = {tv_distance(n, lam):.4f}$")
-    ax.legend()
+    width = 0.38
+    axes[idx].bar(k - width/2, pmf_binom, width=width, label=rf'$\mathrm{{Binomial}}({n}, {p:.2f})$', alpha=0.85)
+    axes[idx].bar(k + width/2, pmf_pois, width=width, label=rf'$\mathrm{{Poisson}}({lam})$', alpha=0.85)
+    
+    axes[idx].set_title(rf'$(\lambda={lam}, n={n}) \Rightarrow p={p:.2f},\ d_{{\mathrm{{TV}}}} = {tv:.4f}$', fontsize=12)
+    axes[idx].set_xlabel('Count $k$', fontsize=11)
+    axes[idx].set_ylabel('Probability Mass', fontsize=11)
+    axes[idx].set_xticks(k)
+    axes[idx].grid(axis='y', linestyle='--', alpha=0.5)
+    axes[idx].legend()
 
 plt.tight_layout()
 plt.show()
