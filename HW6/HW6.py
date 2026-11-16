@@ -7,7 +7,7 @@ np.random.seed(42)
 N, s, rate = 30_000, 0.5, 2.0
 q_levels = [0.1, 0.5, 0.9]
 
-# Exponential Model: Exp(2)
+# Exp(2)
 orig_exp = stats.expon.rvs(scale=1.0 / rate, size=N)
 rem_exp = orig_exp[orig_exp > s] - s
 
@@ -28,7 +28,7 @@ theo_exp = np.exp(-rate * grid_exp)
 print(f"\nMax discrepancy [0, 3] (Original):  {np.max(np.abs(surv(orig_exp, grid_exp) - theo_exp)):.5f}")
 print(f"Max discrepancy [0, 3] (Remaining): {np.max(np.abs(surv(rem_exp, grid_exp) - theo_exp)):.5f}")
 
-# Uniform Model: Unif(0, 1)
+# Unif(0, 1)
 orig_unif = stats.uniform.rvs(0.0, 1.0, size=N)
 rem_unif = orig_unif[orig_unif > s] - s
 grid_unif = np.linspace(0, 1, 201)
